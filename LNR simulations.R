@@ -6,4 +6,7 @@
 
 ################################################################################
 
-
+# start with a two-response design 
+factors=list(S=c("resp1","resp2"))
+responses=c("RESP1","RESP2")
+match.map=list(M=list(left="RESP1",right="RESP2"))
