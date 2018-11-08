@@ -29,3 +29,4 @@ model <- model.dmc(type="lnr",constants=c(st0=0),
 p.vector  <- c(meanlog.true=-1,meanlog.false=0,
                sdlog.true=1,sdlog.false=1,t0=.2)
 data.model <- data.model.dmc(simulate.dmc(p.vector,model,n=1e4),model)
+plot.score.dmc (data.model)
