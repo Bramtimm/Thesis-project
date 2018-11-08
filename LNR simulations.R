@@ -6,6 +6,9 @@
 
 ################################################################################
 
+setwd("C:/Users/Bram/Documents/RM Thesis/Analyses/Thesis project")
+source("dependencies.R")
+
 # start with a two-response design 
 factors=list(S=c("resp1","resp2"))
 responses=c("RESP1","RESP2")
