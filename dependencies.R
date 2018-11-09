@@ -18,3 +18,15 @@ rm(list=ls()); par(mfrow = c(1,1))
 source("dmc/dmc.R")
 
 load_model ("LNR","lnr.R")
+
+# function for loading and checking packages
+pkgTest <- function(x)
+{
+  if (!require(x,character.only = TRUE))
+  {
+    install.packages(x,dep=TRUE)
+    if(!require(x,character.only = TRUE)) stop("Package not found")
+  }
+}
+
+packages <- c('depmixS4','fitdistrplus','gamlss')
