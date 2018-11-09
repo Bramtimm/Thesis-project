@@ -30,3 +30,4 @@ pkgTest <- function(x)
 }
 
 packages <- c('depmixS4','fitdistrplus','gamlss')
+sapply(packages,pkgTest)
