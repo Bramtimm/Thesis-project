@@ -46,8 +46,10 @@ plot.score.dmc (data.model)
 fitdist(data.model[as.integer(factor(data.model[,2]))==as.integer(factor(data.model[,1])),3],"lnorm")
 fitdist(data.model[as.integer(factor(data.model[,2]))!=as.integer(factor(data.model[,1])),3],"lnorm")
 
+# add error category 
+data.model$error <- ifelse(as.integer(factor(data.model[,2]))==as.integer(factor(data.model[,1])),1,0)
 # note that RTs are merged in data.model[,3], now we specify our depmixS4 element # seems to work for lognormal distribution
-mod.test <- depmix(list(RT~1,R~1), data = data.model, nstates = 2,family = list(gaussian(),multinomial()))
+mod.test <- depmix(list(RT~1,error~1), data = data.model, nstates = 2,family = list(gaussian(),multinomial()))
 
 # only RTs
 mod2.test <- depmix(RT~1, data = data.model, nstates = 2, family=gaussian(),instart = c(0.99, 0.01))
@@ -67,14 +69,14 @@ RT <- data.model$RT
 
 rModels <- list(
   list(
-    lnorm(RT,pstart=c(-0.5,.1)),
-    GLMresponse(formula=R~1, data=data.model, 
-                family=multinomial("identity"), pstart=c(0.5,0.5))
+    lnorm(RT,pstart=c(-1,1)),
+    GLMresponse(formula=error~1, data=data.model, 
+                family=multinomial("identity"), pstart=c(0.75,0.25))
   ),
   list(
-    lnorm(RT,pstart=c(-1,.1)),
-    GLMresponse(formula=R~1, data=data.model, 
-                family=multinomial("identity"), pstart=c(.1,.9))
+    lnorm(RT,pstart=c(0,1)),
+    GLMresponse(formula=error~1, data=data.model, 
+                family=multinomial("identity"), pstart=c(.25,.75))
   )
 )
 
@@ -88,12 +90,20 @@ inMod <- transInit(~1,ns=2,ps=instart,family=multinomial("identity"), data=data.
 
 mod <- makeDepmix(response=rModels,transition=transition,prior=inMod,ntimes=20000, 
                   homogeneous=FALSE)
-
+a
 fm3 <- fit(mod,emc=em.control(rand=FALSE))
 summary(fm3)
 
+fm3@transition
+
+fm3.transition <- matrix(c(0.559,0.441,
+                           0.546,0.454),
+                         nrow=2,ncol=2,byrow=T)
+          
+Mc <- new("markovchain",states= c("S1","S2"),transitionMatrix= fm3.transition,name="test")
 ## End(Not run)
+initialState <- c(0.5,0.5)
 
+initialState * (Mc^20000)
 
-
-
+sum(data.model$error)/length(data.model$error)
