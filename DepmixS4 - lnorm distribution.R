@@ -102,7 +102,7 @@ setMethod("fit","lnorm",
           }
 )
 
-setMethod("predict","exgaus", 
+setMethod("predict","lnorm", 
           function(object) {
             ret <- object@parameters$mu
             return(ret)
