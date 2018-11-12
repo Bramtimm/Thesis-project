@@ -22,15 +22,15 @@ setMethod("lnorm",
             y <- matrix(y, length(y))
             x <- matrix(1)
             parameters <- list()
-            npar <- 3
+            npar <- 2
             if(is.null(fixed)) fixed <- as.logical(rep(0,npar))
             if(!is.null(pstart)) {
-            if(length(pstart)!=npar) stop("length of 'pstart' must be ",npar,"\n","The third parameter here relates to nu, set it to zero for a regular lognormal distribution")
+            if(length(pstart)!=npar) stop("length of 'pstart' must be ",npar) #"\n","The third parameter here relates to nu, set it to zero for a regular lognormal distribution")
               parameters$mu <- pstart[1]
               parameters$sigma <- log(pstart[2])
-              parameters$nu <- pstart[3]
+              #parameters$nu <- pstart[3]
             }
-            mod <- new("lnorm", parameters = parameters, fixed = fixed, x=x,y=y,npar=npar)
+            mod <- new("lnorm", parameters=parameters, fixed=fixed, x=x,y=y,npar=npar)
             mod
           }
 )
@@ -41,20 +41,20 @@ setMethod("show","lnorm",
             cat("Parameters: \n")
             cat("mu: ", object@parameters$mu, "\n")
             cat("sigma: ", object@parameters$sigma, "\n")
-            cat("nu: ", object@parameters$nu, "\n")
+            #cat("nu: ", object@parameters$nu, "\n")
           }
 )
 
 setMethod("dens","lnorm",
           function(object,log=FALSE) {
-            dLNO(object@y, mu = predict(object), sigma=exp(object@parameters$sigma), nu=object@parameters$nu, log=log)
+            dLOGNO(object@y, mu = predict(object), sigma=exp(object@parameters$sigma), log=log)
           }
 )
 
 setMethod("getpars","response",
           function(object,which="pars",...) {
             switch(which,
-                   "pars"= {
+                   "pars" = {
                      parameters <- numeric()
                      parameters <- unlist(object@parameters)
                      pars <- parameters
@@ -76,7 +76,7 @@ setMethod("setpars","lnorm",
                    "pars"= {
                      object@parameters$mu <- values[1]
                      object@parameters$sigma <- values[2]
-                     object@parameters$nu <- values[3]
+                     #object@parameters$nu <- values[3]
                    },
                    "fixed" = {
                      object@fixed <- as.logical(values)
@@ -91,12 +91,12 @@ setMethod("fit","lnorm",
           function(object,w) {
             if(missing(w)) w <- NULL
             y <- object@y
-            fit <- gamlss(y~1,weights=w,family=LNO(),
+            fit <- gamlss(y~1,weights=w,family=LOGNO(),
                           control=gamlss.control(n.cyc=100,trace=FALSE),
                           mu.start=object@parameters$mu,
-                          sigma.start=exp(object@parameters$sigma),
-                          nu.start=object@parameters$nu)
-            pars <- c(fit$mu.coefficients,fit$sigma.coefficients,fit$nu.coefficients)
+                          sigma.start=exp(object@parameters$sigma))
+                          #nu.start=object@parameters$nu)
+            pars <- c(fit$mu.coefficients,fit$sigma.coefficients)#,fit$nu.coefficients)
             object <- setpars(object,pars)
             object
           }

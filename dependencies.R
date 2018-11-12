@@ -29,5 +29,5 @@ pkgTest <- function(x)
   }
 }
 
-packages <- c('depmixS4','fitdistrplus','gamlss')
+packages <- c('depmixS4','fitdistrplus','gamlss','gamlss.dist')
 sapply(packages,pkgTest)

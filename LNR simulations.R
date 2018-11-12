@@ -46,19 +46,54 @@ plot.score.dmc (data.model)
 fitdist(data.model[as.integer(factor(data.model[,2]))==as.integer(factor(data.model[,1])),3],"lnorm")
 fitdist(data.model[as.integer(factor(data.model[,2]))!=as.integer(factor(data.model[,1])),3],"lnorm")
 
-# We need to work on some functions to include the lognormal distribution in the depmixS4 package
-# Work on this in weekend
-
-
-
 # note that RTs are merged in data.model[,3], now we specify our depmixS4 element # seems to work for lognormal distribution
 mod.test <- depmix(list(RT~1,R~1), data = data.model, nstates = 2,family = list(gaussian(),multinomial()))
 
 # only RTs
-mod2.test <- depmix(RT~1, data = data.model, nstates = 2, family=LOGNO(),instart = c(0.99, 0.01))
+mod2.test <- depmix(RT~1, data = data.model, nstates = 2, family=gaussian(),instart = c(0.99, 0.01))
 
 # fit
 fm.mod1 <- fit(mod.test)
 fm.mod2 <- fit(mod2.test)
 summary(fm.mod1)
 summary(fm.mod2)
+
+# We need to work on some functions to include the lognormal distribution in the depmixS4 package
+# Work on this in weekend
+
+source("DepmixS4 - lnorm distribution.R")
+
+RT <- data.model$RT
+
+rModels <- list(
+  list(
+    lnorm(RT,pstart=c(-0.5,.1)),
+    GLMresponse(formula=R~1, data=data.model, 
+                family=multinomial("identity"), pstart=c(0.5,0.5))
+  ),
+  list(
+    lnorm(RT,pstart=c(-1,.1)),
+    GLMresponse(formula=R~1, data=data.model, 
+                family=multinomial("identity"), pstart=c(.1,.9))
+  )
+)
+
+transition <- list()
+transition[[1]] <- transInit(~1,nstates=2,data=data.model)
+transition[[2]] <- transInit(~1,nstates=2,data=data.model)
+
+
+instart=c(0.5,0.5)
+inMod <- transInit(~1,ns=2,ps=instart,family=multinomial("identity"), data=data.frame(rep(1,1)))
+
+mod <- makeDepmix(response=rModels,transition=transition,prior=inMod,ntimes=20000, 
+                  homogeneous=FALSE)
+
+fm3 <- fit(mod,emc=em.control(rand=FALSE))
+summary(fm3)
+
+## End(Not run)
+
+
+
+
