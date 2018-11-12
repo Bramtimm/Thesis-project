@@ -1,6 +1,6 @@
 ############## Modeling with LNR ###############################################
 
-# Author: Bram Timmers
+# Author: Bram Timmers -- mostly from tutorial DMC
 # use: experimenting with LNR, creating functions for simulations 1,2,3
 # Dependencies: DMC -> install_packages.R, dmc/dmc.R, load_model ("LNR","lnr.R")
 
@@ -31,7 +31,7 @@ model <- model.dmc(type="lnr",constants=c(st0=0),
 # 1) In this example accuracy turns out to be around 75% - this is the same ex. as in tutorial of DMC
 p.vector  <- c(meanlog.true=-1,meanlog.false=0,
                sdlog.true=1,sdlog.false=1,t0=.2)
-data.model <- data.model.dmc(simulate.dmc(p.vector,model,n=1e4),model)
+data.model <- data.model.dmc(simulate.dmc(p.vector,model,n=1e3),model)
 plot.score.dmc (data.model)
 
 #################### Working with depmixS4 ################################
@@ -48,7 +48,8 @@ fitdist(data.model[as.integer(factor(data.model[,2]))!=as.integer(factor(data.mo
 
 # add error category 
 data.model$error <- ifelse(as.integer(factor(data.model[,2]))==as.integer(factor(data.model[,1])),1,0)
-# note that RTs are merged in data.model[,3], now we specify our depmixS4 element # seems to work for lognormal distribution
+
+# note that RTs are merged in data.model[,3], now we specify our depmixS4 element # seems to work for normal distribution
 mod.test <- depmix(list(RT~1,error~1), data = data.model, nstates = 2,family = list(gaussian(),multinomial()))
 
 # only RTs
@@ -67,6 +68,8 @@ source("DepmixS4 - lnorm distribution.R")
 
 RT <- data.model$RT
 
+# this gives weird transition matrix
+
 rModels <- list(
   list(
     lnorm(RT,pstart=c(-1,1)),
@@ -80,6 +83,15 @@ rModels <- list(
   )
 )
 
+rModels2 <- list(
+  list(
+    lnorm(RT,pstart=c(-0.5,0.5))
+  ),
+  list(
+    lnorm(RT,pstart=c(0.5,0.5))
+  )
+)
+
 transition <- list()
 transition[[1]] <- transInit(~1,nstates=2,data=data.model)
 transition[[2]] <- transInit(~1,nstates=2,data=data.model)
@@ -88,22 +100,15 @@ transition[[2]] <- transInit(~1,nstates=2,data=data.model)
 instart=c(0.5,0.5)
 inMod <- transInit(~1,ns=2,ps=instart,family=multinomial("identity"), data=data.frame(rep(1,1)))
 
-mod <- makeDepmix(response=rModels,transition=transition,prior=inMod,ntimes=20000, 
+mod <- makeDepmix(response=rModels,transition=transition,prior=inMod,ntimes=2000, 
                   homogeneous=FALSE)
-a
+
 fm3 <- fit(mod,emc=em.control(rand=FALSE))
-summary(fm3)
 
-fm3@transition
+inMod <- transInit(~1,ns=2,ps=instart, data=data.frame(rep(1,1)))
 
-fm3.transition <- matrix(c(0.559,0.441,
-                           0.546,0.454),
-                         nrow=2,ncol=2,byrow=T)
-          
-Mc <- new("markovchain",states= c("S1","S2"),transitionMatrix= fm3.transition,name="test")
-## End(Not run)
-initialState <- c(0.5,0.5)
 
-initialState * (Mc^20000)
+mod <- makeDepmix(response=rModels2,transition=transition,prior=inMod,ntimes=2000, 
+                  homogeneous=FALSE)
 
-sum(data.model$error)/length(data.model$error)
+fm3.r <- fit(mod,emc=em.control(rand=FALSE))
