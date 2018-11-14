@@ -25,6 +25,13 @@ model <- model.dmc(type="lnr",constants=c(st0=0),
                    factors=list(S=c("resp1","resp2")),
                    responses=c("RESP1","RESP2"))
 
+model.extended.t0 <- model.dmc(type="lnr",constants=c(st0=0),
+                              p.map=list(meanlog="M",sdlog="M",t0="M",st0="1"),
+                              match.map=list(M=list(resp1="RESP1",resp2="RESP2")),
+                              factors=list(S=c("resp1","resp2")),
+                              responses=c("RESP1","RESP2"))
+
+
 # Parameter vector names are: ( see attr(,"p.vector") ) --> extension by t0 only leads to one accumulator winning more.
 # [1] "meanlog.true"  "meanlog.false" "sdlog.true"    "sdlog.false"   "t0"           
 
@@ -35,6 +42,15 @@ data.model <- data.model.dmc(simulate.dmc(p.vector,model,n=1e3),model)
 
 plot.score.dmc(data.model)
 
+## extended
+
+p.vector.ex  <- c(meanlog.true=-1,meanlog.false=0,
+               sdlog.true=1,sdlog.false=1,t0.true=2,t0.false=.2)
+data.model.ex <- data.model.dmc(simulate.dmc(p.vector.ex,model.extended.t0,n=1e3),model)
+
+plot.score.dmc(data.model.ex)
+
+
 #################### Working with depmixS4 ################################
 
 # Author: Bram Timmers
@@ -42,6 +58,8 @@ plot.score.dmc(data.model)
 # dependencies: already sourced by dependencies.r
 
 ###########################################################################
+
+# data.model <- data.model.ex #change to see extended model as simulated above
 
 # the normal fitdistr on true/false response.
 fitdist(data.model[as.integer(factor(data.model[,2]))==as.integer(factor(data.model[,1])),3],"lnorm")
@@ -132,7 +150,7 @@ mod2 <- makeDepmix(response=rModels2,transition=transition,prior=inMod,ntimes=20
 fm3.r <- fit(mod2,emc=em.control(rand=FALSE))
 
 # for plotting purposes
-hist(data.model$RT,breaks=40,freq=FALSE,ylim=c(0,4),xlim=c(0,2))
+hist(data.model$RT,breaks=40,freq=FALSE,ylim=c(0,4),xlim=c(0,4))
 lines(density(data.model[as.integer(factor(data.model[,2]))==as.integer(factor(data.model[,1])),3]),lwd=2)
 lines(density(data.model[as.integer(factor(data.model[,2]))!=as.integer(factor(data.model[,1])),3]),lwd=2,col="red")
 
@@ -143,3 +161,5 @@ par.state2 <- fm3@response[[2]][[1]]@parameters
 x <- seq(0,4,0.001)
 lines(x,dlnorm(x,par.state1[[1]],exp(par.state1[[2]])),col="blue",lwd=2)
 lines(x,dlnorm(x,par.state2[[1]],exp(par.state2[[2]])),col="green",lwd=2)
+
+
