@@ -5,7 +5,7 @@
 # Dependencies: dependencies.R <- need gamlss and depmixS4 at minimum
 ################################################################################
 
-source('dependencies.R')
+#source('dependencies.R')
 
 # define a response class which only contains the standard slots, no additional slots
 setClass("lnorm", contains="response") 
