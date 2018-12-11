@@ -220,10 +220,10 @@ RT <- data.test$RT
 
 rModels2 <- list(
   list(
-    lnorm(RT,pstart=c(-0.5,1))
+    s_lnorm(RT,pstart=c(-0.5,1,0))
   ),
   list(
-    lnorm(RT,pstart=c(0.5,1))
+    s_lnorm(RT,pstart=c(0.5,1,0))
   )
 )
 
