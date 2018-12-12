@@ -16,7 +16,7 @@ setMethod("s_lnorm",
               if(length(pstart)!=npar) stop("length of 'pstart' must be ",npar) #"\n","The third parameter here relates to nu, set it to zero for a regular lognormal distribution")
               parameters$mu <- pstart[1]
               parameters$sigma <- log(pstart[2])
-              parameters$Ter <- pstart[3]
+              parameters$nu <- pstart[3]
             }
             mod <- new("s_lnorm", parameters=parameters, fixed=fixed, x=x,y=y,npar=npar)
             mod
@@ -29,13 +29,13 @@ setMethod("show","s_lnorm",
             cat("Parameters: \n")
             cat("mu: ", object@parameters$mu, "\n")
             cat("sigma: ", object@parameters$sigma, "\n")
-            cat("Ter: ", object@parameters$Ter, "\n")
+            cat("nu: ", object@parameters$nu, "\n")
           }
 )
 
 setMethod("dens","s_lnorm",
           function(object,log=FALSE) {
-            dSLOGNO(object@y, mu = predict(object), sigma=exp(object@parameters$sigma),Ter=object@parameters$Ter, log=log)
+            dSLOGNO(object@y, mu = predict(object), sigma=exp(object@parameters$sigma),nu=object@parameters$nu, log=log)
           }
 )
 
@@ -64,7 +64,7 @@ setMethod("setpars","s_lnorm",
                    "pars"= {
                      object@parameters$mu <- values[1]
                      object@parameters$sigma <- values[2]
-                     object@parameters$Ter <- values[3]
+                     object@parameters$nu <- values[3]
                    },
                    "fixed" = {
                      object@fixed <- as.logical(values)
@@ -83,9 +83,9 @@ setMethod("fit","s_lnorm",
                           control=gamlss.control(n.cyc=100,trace=FALSE),
                           mu.start=object@parameters$mu,
                           sigma.start=exp(object@parameters$sigma),
-                          Ter.start=object@parameters$Ter)
+                          nu.start=object@parameters$nu)
             #nu.start=object@parameters$nu)
-            pars <- c(fit$mu.coefficients,fit$sigma.coefficients,fit$Ter.coefficients)#,fit$nu.coefficients)
+            pars <- c(fit$mu.coefficients,fit$sigma.coefficients,fit$nu.coefficients)#,fit$nu.coefficients)
             object <- setpars(object,pars)
             object
           }

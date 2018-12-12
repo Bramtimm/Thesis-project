@@ -8,6 +8,8 @@
 
 setwd("C:/Users/Bram/Documents/RM Thesis/Analyses/Thesis project")
 source("dependencies.R")
+source("DepmixS4 - lnorm distribution.R")
+source("DepmixS4 - Shifted_lognormal.R")
 
 # start with a two-response design 
 factors=list(S=c("resp1","resp2"))
@@ -99,8 +101,6 @@ lines(x,dnorm(x,par.state2[[1]],par.state2[[2]]),col="green",lwd=2)
 # We need to work on some functions to include the lognormal distribution in the depmixS4 package
 
 # This works and is correct! :-)
-
-source("DepmixS4 - lnorm distribution.R")
 
 RT <- data.model$RT
 
@@ -201,7 +201,7 @@ N.state.1 <- sum(HMM.1.seq==1)
 N.state.2 <- sum(HMM.1.seq==2)
 
 #initial parameter values
-p.vector.1 <- c(meanlog=-1,sdlog=1,t0=.5) 
+p.vector.1 <- c(meanlog=-1,sdlog=1,t0=1) 
 p.vector.2 <- c(meanlog=0,sdlog=1,t0=1)
 
 # simulate response times 
@@ -231,14 +231,15 @@ transition <- list()
 transition[[1]] <- transInit(~1,nstates=2,data=data.test)
 transition[[2]] <- transInit(~1,nstates=2,data=data.test)
 
-
 instart=c(0.5,0.5)
 inMod <- transInit(~1,ns=2,ps=instart, data=data.frame(rep(1,1)))
 
 mod2 <- makeDepmix(response=rModels2,transition=transition,prior=inMod,ntimes=N[1], 
                    homogeneous=FALSE)
 
+
 fm3.r <- fit(mod2,emc=em.control(rand=FALSE))
+
 
 # for plotting purposes
 hist(data.test[,1],breaks=100,freq=FALSE,ylim=c(0,4),xlim=c(0,4))
