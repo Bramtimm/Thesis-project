@@ -25,7 +25,7 @@ pSLOGNO <- function(q, mu = mu, sigma = sigma,nu =nu, lower.tail = TRUE, log.p =
   cdf
 }
 
-qSLOGNO <- function(p, mu = 0, sigma = 1,nu=0, lower.tail = TRUE, log.p = FALSE) 
+qSLOGNO <- function(p, mu = mu, sigma = sigma,nu=nu, lower.tail = TRUE, log.p = FALSE) 
 {
   if (any(sigma <= 0)) 
     stop(paste("sigma must be greater than 0 ", "\n", ""))
@@ -36,7 +36,7 @@ qSLOGNO <- function(p, mu = 0, sigma = 1,nu=0, lower.tail = TRUE, log.p = FALSE)
   q
 }
 
-rSLOGNO <- function(n, mu = 0, sigma = 1,nu=0) 
+rSLOGNO <- function(n, mu = mu, sigma = sigma,nu=nu) 
 {
   if (any(sigma <= 0)) 
     stop(paste("sigma must be greater than 0 ", "\n", ""))

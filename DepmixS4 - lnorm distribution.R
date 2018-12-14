@@ -91,7 +91,7 @@ setMethod("fit","lnorm",
           function(object,w) {
             if(missing(w)) w <- NULL
             y <- object@y
-            fit <- gamlss(y~1,weights=w,family=LOGNO(),
+            fit <- gamlssML(y~1,weights=w,family=LOGNO(),
                           control=gamlss.control(n.cyc=100,trace=FALSE),
                           mu.start=object@parameters$mu,
                           sigma.start=exp(object@parameters$sigma))
