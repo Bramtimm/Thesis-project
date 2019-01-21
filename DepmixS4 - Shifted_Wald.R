@@ -1,10 +1,8 @@
-source("GAMLSS object - Shifted Lognormal.R")
+setClass("SWald", contains="response") 
 
-setClass("s_lnorm", contains="response") 
+setGeneric("SWald", function(y, pstart=NULL, fixed=NULL,...) standardGeneric("SWald"))
 
-setGeneric("s_lnorm", function(y, pstart=NULL, fixed=NULL,...) standardGeneric("s_lnorm"))
-
-setMethod("s_lnorm",
+setMethod("SWald",
           signature(y="ANY"),
           function(y,pstart=NULL,fixed=NULL,...){
             y <- matrix(y, length(y))
@@ -14,28 +12,28 @@ setMethod("s_lnorm",
             if(is.null(fixed)) fixed <- as.logical(rep(0,npar))
             if(!is.null(pstart)) {
               if(length(pstart)!=npar) stop("length of 'pstart' must be ",npar) #"\n","The third parameter here relates to nu, set it to zero for a regular lognormal distribution")
-              parameters$mu <- pstart[1]
-              parameters$sigma <- log(pstart[2])
-              parameters$nu <- pstart[3]
+              parameters$alpha <- log(pstart[1])
+              parameters$gamma <- log(pstart[2])
+              parameters$theta <- log(pstart[3])
             }
-            mod <- new("s_lnorm", parameters=parameters, fixed=fixed, x=x,y=y,npar=npar)
+            mod <- new("SWald", parameters=parameters, fixed=fixed, x=x,y=y,npar=npar)
             mod
           }
 )
 
-setMethod("show","s_lnorm",
+setMethod("show","SWald",
           function(object) {
-            cat("Model of type shifted lnorm/lognormal (see ?gamlss for details) \n")
+            cat("Model of type Shifted Wald (see ?statmod::dinvgauss for details) \n")
             cat("Parameters: \n")
-            cat("mu: ", object@parameters$mu, "\n")
-            cat("sigma: ", object@parameters$sigma, "\n")
-            cat("nu: ", object@parameters$nu, "\n")
+            cat("alpha: ", object@parameters$alpha, "\n")
+            cat("gamma: ", object@parameters$gamma, "\n")
+            cat("theta: ", object@parameters$theta, "\n")
           }
 )
 
-setMethod("dens","s_lnorm",
+setMethod("dens","SWald",
           function(object,log=FALSE) {
-            dSLOGNO(object@y, mu = predict(object), sigma=exp(object@parameters$sigma),nu=object@parameters$nu, log=log)
+            dSwald(object@y,mu=predict(object),sigma=exp(object@parameters$gamma),nu=exp(object@parameters$theta),log=log)
           }
 )
 
@@ -54,7 +52,7 @@ setMethod("getpars","response",
           }
 )
 
-setMethod("setpars","s_lnorm",
+setMethod("setpars","SWald",
           function(object, values, which="pars", ...) {
             npar <- npar(object)
             if(length(values)!=npar) stop("length of 'values' must be",npar)
@@ -62,9 +60,9 @@ setMethod("setpars","s_lnorm",
             nms <- names(object@parameters)
             switch(which,
                    "pars"= {
-                     object@parameters$mu <- values[1]
-                     object@parameters$sigma <- values[2]
-                     object@parameters$nu <- values[3]
+                     object@parameters$alpha <- values[1]
+                     object@parameters$gamma <- values[2]
+                     object@parameters$theta <- values[3]
                    },
                    "fixed" = {
                      object@fixed <- as.logical(values)
@@ -75,25 +73,21 @@ setMethod("setpars","s_lnorm",
           }
 )
 
-setMethod("fit","s_lnorm",
+setMethod("fit","SWald",
           function(object,w) {
             if(missing(w)) w <- NULL
             y <- object@y
-            fit <- gamlss(y~1,weights=w,family=SLOGNO(),
-                          control=gamlss.control(c.crit=1e-5,n.cyc=100,trace=FALSE),
-                          mu.start=object@parameters$mu,
-                          sigma.start=exp(object@parameters$sigma),
-                          nu.start=object@parameters$nu)
-            #nu.start=object@parameters$nu)
-            pars <- c(fit$mu.coefficients,fit$sigma.coefficients,fit$nu.coefficients)#,fit$nu.coefficients)
+            #y <- as.vector(y)
+            fit <- optim(par=c(exp(object@parameters$alpha),exp(object@parameters$gamma),exp(object@parameters$theta)),fn=obj.seq,w=w, y=y)
+            pars <- c(fit$par[1],fit$par[2],fit$par[3])#,fit$nu.coefficients)
             object <- setpars(object,pars)
             object
           }
 )
 
-setMethod("predict","s_lnorm", 
+setMethod("predict","SWald", 
           function(object) {
-            ret <- object@parameters$mu
+            ret <- object@parameters$alpha
             return(ret)
           }
 )

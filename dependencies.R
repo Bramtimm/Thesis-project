@@ -29,7 +29,7 @@ pkgTest <- function(x)
   }
 }
 
-packages <- c('depmixS4','fitdistrplus','gamlss','gamlss.dist','markovchain','brms')
+packages <- c('depmixS4','fitdistrplus','gamlss','gamlss.dist','markovchain','brms','pso','DEoptim','seqmodels')
 sapply(packages,pkgTest)
 
 setwd("C:/Users/Bram/Documents/RM Thesis/Analyses/Thesis project")

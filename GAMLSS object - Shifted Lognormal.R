@@ -4,10 +4,7 @@ dSLOGNO <- function(x, mu = mu, sigma = sigma, nu=nu, log = FALSE)
     stop(paste("sigma must be greater than 0 ", "\n", ""))
   if (any(x < 0)){ 
     stop(paste("x must be >=0", "\n", ""))}
-  if(any(nu > x & nu<0)){
-    stop(paste("nu must be smaller than x and higher than zero"))
-  }
-  fy <- dshifted_lnorm(x = x, meanlog = mu, sdlog = sigma, shift=nu , log = log)
+  fy <- ifelse(nu>=x,0,dshifted_lnorm(x = x, meanlog = mu, sdlog = sigma, shift=nu , log = log))
   fy
 }
 

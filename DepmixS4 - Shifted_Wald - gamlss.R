@@ -1,54 +1,39 @@
-############## Modeling with LNR ###############################################
+setClass("SWald", contains="response") 
 
-# Author: Bram Timmers
-# use: adding a lognormal model to depmixS4
-# Dependencies: dependencies.R <- need gamlss and depmixS4 at minimum
-################################################################################
+setGeneric("SWald", function(y, pstart=NULL, fixed=NULL,...) standardGeneric("SWald"))
 
-#source('dependencies.R')
-
-# define a response class which only contains the standard slots, no additional slots
-setClass("lnorm", contains="response") 
-
-# note that we name our distribution now as lnorm.
-
-# define a generic for the method defining the response class
-setGeneric("lnorm", function(y, pstart=NULL, fixed=NULL,...) standardGeneric("lnorm"))
-
-# define the method that creates the response class
-setMethod("lnorm",
+setMethod("SWald",
           signature(y="ANY"),
           function(y,pstart=NULL,fixed=NULL,...){
             y <- matrix(y, length(y))
             x <- matrix(1)
             parameters <- list()
-            npar <- 2
+            npar <- 3
             if(is.null(fixed)) fixed <- as.logical(rep(0,npar))
             if(!is.null(pstart)) {
-            if(length(pstart)!=npar) stop("length of 'pstart' must be ",npar) #"\n","The third parameter here relates to nu, set it to zero for a regular lognormal distribution")
-              parameters$mu <- pstart[1]
+              if(length(pstart)!=npar) stop("length of 'pstart' must be ",npar) #"\n","The third parameter here relates to nu, set it to zero for a regular lognormal distribution")
+              parameters$mu <- log(pstart[1])
               parameters$sigma <- log(pstart[2])
-              #parameters$nu <- pstart[3]
+              parameters$nu <- log(pstart[3])
             }
-            mod <- new("lnorm", parameters=parameters, fixed=fixed, x=x,y=y,npar=npar)
+            mod <- new("SWald", parameters=parameters, fixed=fixed, x=x,y=y,npar=npar)
             mod
           }
 )
 
-setMethod("show","lnorm",
+setMethod("show","SWald",
           function(object) {
-            cat("Model of type lnorm/lognormal (see ?gamlss for details) \n")
+            cat("Model of type Shifted Wald (see ?statmod::dinvgauss for details) \n")
             cat("Parameters: \n")
             cat("mu: ", object@parameters$mu, "\n")
             cat("sigma: ", object@parameters$sigma, "\n")
-            #cat("nu: ", object@parameters$nu, "\n")
+            cat("nu: ", object@parameters$nu, "\n")
           }
 )
 
-setMethod("dens","lnorm",
+setMethod("dens","SWald",
           function(object,log=FALSE) {
-            dLOGNO(object@y, mu = predict(object), sigma=exp(object@parameters$sigma), log=log)
-          }
+            dSwald(object@y,mu=predict(object),sigma=exp(object@parameters$sigma),nu=exp(object@parameters$nu),log=log)  }
 )
 
 setMethod("getpars","response",
@@ -66,7 +51,7 @@ setMethod("getpars","response",
           }
 )
 
-setMethod("setpars","lnorm",
+setMethod("setpars","SWald",
           function(object, values, which="pars", ...) {
             npar <- npar(object)
             if(length(values)!=npar) stop("length of 'values' must be",npar)
@@ -76,7 +61,7 @@ setMethod("setpars","lnorm",
                    "pars"= {
                      object@parameters$mu <- values[1]
                      object@parameters$sigma <- values[2]
-                     #object@parameters$nu <- values[3]
+                     object@parameters$nu <- values[3]
                    },
                    "fixed" = {
                      object@fixed <- as.logical(values)
@@ -87,22 +72,25 @@ setMethod("setpars","lnorm",
           }
 )
 
-setMethod("fit","lnorm",
+setMethod("fit","SWald",
           function(object,w) {
             if(missing(w)) w <- NULL
             y <- object@y
-            fit <- gamlssML(y~1,weights=w,family=LOGNO(),
-                          control=gamlss.control(c.crit=1e-5,n.cyc=1000,trace=FALSE),
-                          mu.start=object@parameters$mu,
-                          sigma.start=exp(object@parameters$sigma))
-                          #nu.start=object@parameters$nu)
-            pars <- c(fit$mu.coefficients,fit$sigma.coefficients)#,fit$nu.coefficients)
+            #y <- as.vector(y)
+            #fit <- optim(par=c(exp(object@parameters$alpha),exp(object@parameters$gamma),exp(object@parameters$theta)),fn=obj.seq,w=w, y=y)
+            #pars <- c(fit$par[1],fit$par[2],fit$par[3])#,fit$nu.coefficients)
+            fit <- gamlss(y~1,weights=w,family=SWald(),
+                                 control=gamlss.control(c.crit=1e-5,n.cyc=100,trace=FALSE),
+                                 mu.start=exp(object@parameters$mu),
+                                 sigma.start=exp(object@parameters$sigma),
+                                 nu.start=exp(object@parameters$nu))
+            pars <- c(fit$mu.coefficients,fit$sigma.coefficients,fit$nu.coefficients)
             object <- setpars(object,pars)
             object
           }
 )
 
-setMethod("predict","lnorm", 
+setMethod("predict","SWald", 
           function(object) {
             ret <- object@parameters$mu
             return(ret)
