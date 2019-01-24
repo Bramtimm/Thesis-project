@@ -8,11 +8,31 @@
 
 source("dependencies.R")
 
-model.single <- model.dmc(type="lnr",constants=c(st0=0),
+model.single <- model.dmc(type="lnr",constants=c(st0=0,t0="0"),
                           p.map=list(meanlog="1",sdlog="1",t0="1",st0="1"),
                           match.map=list(M=list(resp1="RESP1")),
                           factors=list(S=c("resp1")),
                           responses=c("RESP1"))
+
+# create function with arguments trans (transition - matrix), N (Number of trials)
+# and NoC (Number of Chains) to sample HMM Chains for simulations
+
+simulate.HMM <- function(trans,N,NoS){
+  statesNames <- c("strategy 1","strategy 2")
+  dimnames(trans) <- list(statesNames,statesNames)
+  chains <- matrix(NA,nrow=NoS,ncol=N)
+  
+  #initiate Markov Chain
+  HMM <- new("markovchain", transitionMatrix = trans)
+  
+  #simulate NoS chains
+  chains <- lapply(1:NoS,markovchainSequence,n=N,markovchain=HMM,t0=sample(HMM@states,1),include.t0=FALSE)
+  
+  #binarize
+  chains <- lapply(chains,function(chains)as.numeric(as.factor(chains)))
+  chains <- matrix(unlist(chains),ncol=N,byrow=T)
+  chains
+}
 
 # create function with arguments: p.vector.1,p.vector.2,N
 
@@ -37,7 +57,6 @@ simulate.HMM.LNR <- function(p.vector.1,p.vector.2,N,trans,NoS){
     stop("please specify the number of sequences of chains to be simulated")
   }
   
-
 #set default parameters
 statesNames <- c("strategy 1","strategy 2")
 dimnames(trans) <- list(statesNames,statesNames)
@@ -59,8 +78,8 @@ chains <- lapply(chains,function(chains)as.numeric(as.factor(chains)))
 NoState.1 <- lapply(chains,function(chains)sum(chains==1))
 NoState.2 <- lapply(chains,function(chains)sum(chains==2))
 
-names(p.vector.1) <- c("meanlog","sdlog","t0")
-names(p.vector.2) <- c("meanlog","sdlog","t0")
+names(p.vector.1) <- c("meanlog","sdlog")
+names(p.vector.2) <- c("meanlog","sdlog")
 
 RT.state.1 <- lapply(NoState.1,function(NoState.1)data.model.dmc(simulate.dmc(p.vector.1, model.single,n=NoState.1),model.single)[,3])
 RT.state.2 <- lapply(NoState.2,function(NoState.2)data.model.dmc(simulate.dmc(p.vector.2, model.single,n=NoState.2),model.single)[,3])
