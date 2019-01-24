@@ -68,8 +68,12 @@ rt <- data.test$RT
 ############################################################################
 
 source("optimalization obj functions.R")
+source("DepmixS4 - Shifted_Wald.R")
+source("gamlsss stuff.R") # contains Swald functions
 # Optimization checks
-res.1 <- optim(c(1,2,1),obj.seq,y=state.1,w=rep(1,length(state.1)))
+lb <- rep(0.1,3)
+ub <- c(20,20,min(state.1))
+res.1 <- optim(c(1,1,1),obj.seq,y=state.1,w=rep(1,length(state.1)))
 res.1b <- optim(c(10,20,1),obj.own,y=state.1)
 res.1c <- optim(c(1,20,1),obj,y=state.1)
 res.1
@@ -78,20 +82,28 @@ res.2 <- optim(c(1,1,1),obj.seq,y=state.2,w=rep(1,length(state.2)))
 res.2
 ###############################################################################
 
-# EM - algorithm
+# with gamlss
+
+gamlss(RT~1,weights=rep(1,length(data.test$RT)),data=as.data.frame(data.test$RT),family=Swald(),
+       control=gamlss.control(c.crit=1e-5,n.cyc=100,trace=FALSE),
+       mu.start=2,
+       sigma.start=1,
+       nu.start=2)
+
+# EM - algorithm - doesn't work now
 rt <- data.test$RT
 #EM algorithm 
 rModels <- list(
   list(
-    SWald(rt,pstart=c(2,1,1))),
+    Swald(rt,pstart=c(2,1,1))),
   list(
-    SWald(rt,pstart=c(1,1,8))
+    Swald(rt,pstart=c(2,1,1))
   )
 )
 
 #rt<-as.data.frame(data.test[,1])
 transition <- list()
-trstart <- c(0.9,0.1,0.1,0.9)
+trstart <- c(0.7,0.3,0.3,0.7)
 transition[[1]] <- transInit(~1,nstates=2,data=data.test,pstart=trstart[1:2])#,family=multinomial("identity"))
 transition[[2]] <- transInit(~1,nstates=2,data=data.test,pstart=trstart[3:4])#,family=multinomial("identity"))#,family=multinomial("identity"))
 
@@ -99,17 +111,18 @@ instart=c(0.5,0.5)
 inMod <- transInit(~1,ns=2,ps=instart,data=data.frame(rep(1,1)),family=multinomial("identity"))
   
 mod2 <- makeDepmix(response=rModels,transition=transition,prior=inMod,ntimes=N,homogeneous=FALSE)
-fm3 <- fit(mod2,emc=em.control(rand=FALSE))
+fm3 <- fit(mod2,emc=em.control(rand=F))
 
 lb <- c(0,0,rep(0,4),-Inf,-Inf,-Inf,-Inf,-Inf,-Inf)
 ub <- c(1,1,rep(1,4),Inf,Inf,Inf,Inf,Inf,Inf)
 
-fm3.r <- fit(mod2,method='rsolnp',solnpcntrl=list(rho = 1, outer.iter = 500, inner.iter = 1000, 
-                                                  delta = 1e-10, tol = 1e-10),conrows=diag(12),
+# uses optimatization on the basis of smoother functions
+fm3.r <- fit(mod2,method='rsolnp',solnpcntrl=list(rho = 2, outer.iter = 600, inner.iter = 1200, 
+                                                  delta = 1e-10, tol = 1e-10,trace=T),conrows=diag(12),
              conrows.lower=lb,
              conrows.upper=ub)
 
-single.fit <- solnp(c(2,1,1),obj.seq,y=state.1,w=1,LB=c(0.1,0.1,0.1),UB=c(100,100,100))
+single.fit <- solnp(c(2,1,1),obj.seq,y=state.2,w=1,LB=c(0.1,0.1,0.1),UB=c(100,100,100))
 #################################################################################################
 
 

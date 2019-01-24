@@ -12,7 +12,7 @@ setMethod("SWald",
             if(is.null(fixed)) fixed <- as.logical(rep(0,npar))
             if(!is.null(pstart)) {
               if(length(pstart)!=npar) stop("length of 'pstart' must be ",npar) #"\n","The third parameter here relates to nu, set it to zero for a regular lognormal distribution")
-              parameters$alpha <- log(pstart[1])
+              parameters$alpha <- pstart[1]
               parameters$gamma <- log(pstart[2])
               parameters$theta <- log(pstart[3])
             }
@@ -78,7 +78,12 @@ setMethod("fit","SWald",
             if(missing(w)) w <- NULL
             y <- object@y
             #y <- as.vector(y)
-            fit <- optim(par=c(exp(object@parameters$alpha),exp(object@parameters$gamma),exp(object@parameters$theta)),fn=obj.seq,w=w, y=y)
+            fit <- optim(par=c(object@parameters$alpha,exp(object@parameters$gamma),exp(object@parameters$theta)),fn=obj.seq,w=w, y=y)
+            
+            ######### ps optim
+            #lb <- rep(0,3)
+            #ub <- rep(20,3)
+            #fit <- psoptim(par=c(exp(object@parameters$alpha),exp(object@parameters$gamma),exp(object@parameters$theta)),obj.seq,lower=lb,upper=ub,y=y,w=w,control=list(trace=T,abstol=1e-8,hybrid="off",hybrid.control=list(pgtol=1e-8)))
             pars <- c(fit$par[1],fit$par[2],fit$par[3])#,fit$nu.coefficients)
             object <- setpars(object,pars)
             object

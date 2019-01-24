@@ -7,15 +7,15 @@ obj.own <- function(par,y){
   -sum(log(res))
 }
 
-obj.seq <- function(pars,y,w){
-  pars <- pars
+obj.seq <- function(par,y,w){
+  par<- par
   y <- y
   w <- w
-  res <- dSwald(x=y,mu=pars[2],sigma=pars[1],nu=pars[3],log=FALSE)
-  #if(any(is.na(res))) res <- rep(0,length(y))
+  res <- dSwald(x=y,mu=par[1],sigma=par[2],nu=par[3],log=FALSE)
   res.test <- w*res
   res <- res.test
-  -sum(log(res))
+  LL.1<- -sum(log(res))
+  LL.1
 }
 
 obj <- function(par,y){

@@ -1,29 +1,37 @@
-setClass("Swald", contains="response") 
 
-setGeneric("Swald", function(y, pstart=NULL, fixed=NULL,...) standardGeneric("Swald"))
+data(speed)
+rt <- speed$rt
 
-setMethod("Swald",
-          signature(y="ANY"),
-          function(y,pstart=NULL,fixed=NULL,...){
-            y <- matrix(y, length(y))
+# define a response class which only contains the standard slots, no additional slots
+setClass("exgaus", contains="response")
+
+# define a generic for the method defining the response class
+
+setGeneric("exgaus", function(y, pstart = NULL, fixed = NULL, ...) standardGeneric("exgaus"))
+
+# define the method that creates the response class
+setMethod("exgaus", 
+          signature(y="ANY"), 
+          function(y,pstart=NULL,fixed=NULL, ...) {
+            y <- matrix(y,length(y))
             x <- matrix(1)
             parameters <- list()
             npar <- 3
             if(is.null(fixed)) fixed <- as.logical(rep(0,npar))
             if(!is.null(pstart)) {
-              if(length(pstart)!=npar) stop("length of 'pstart' must be ",npar) #"\n","The third parameter here relates to nu, set it to zero for a regular lognormal distribution")
+              if(length(pstart)!=npar) stop("length of 'pstart' must be ",npar)
               parameters$mu <- pstart[1]
               parameters$sigma <- log(pstart[2])
               parameters$nu <- log(pstart[3])
             }
-            mod <- new("Swald", parameters=parameters, fixed=fixed, x=x,y=y,npar=npar)
+            mod <- new("exgaus",parameters=parameters,fixed=fixed,x=x,y=y,npar=npar)
             mod
           }
 )
 
-setMethod("show","Swald",
+setMethod("show","exgaus",
           function(object) {
-            cat("Model of type Shifted Wald (see ?statmod::dinvgauss for details) \n")
+            cat("Model of type exgaus (see ?gamlss for details) \n")
             cat("Parameters: \n")
             cat("mu: ", object@parameters$mu, "\n")
             cat("sigma: ", object@parameters$sigma, "\n")
@@ -31,9 +39,11 @@ setMethod("show","Swald",
           }
 )
 
-setMethod("dens","Swald",
+setMethod("dens","exgaus",
           function(object,log=FALSE) {
-            dSwald(object@y,mu=predict(object),sigma=exp(object@parameters$sigma),nu=exp(object@parameters$nu),log=log)  }
+            dexGAUS(object@y, mu = predict(object), 
+                    sigma = exp(object@parameters$sigma), nu = exp(object@parameters$nu), log = log)
+          }
 )
 
 setMethod("getpars","response",
@@ -46,12 +56,13 @@ setMethod("getpars","response",
                    },
                    "fixed" = {
                      pars <- object@fixed
-                   })
+                   }
+            )
             return(pars)
           }
 )
 
-setMethod("setpars","Swald",
+setMethod("setpars","exgaus",
           function(object, values, which="pars", ...) {
             npar <- npar(object)
             if(length(values)!=npar) stop("length of 'values' must be",npar)
@@ -72,27 +83,47 @@ setMethod("setpars","Swald",
           }
 )
 
-setMethod("fit","Swald",
+setMethod("fit","exgaus",
           function(object,w) {
             if(missing(w)) w <- NULL
             y <- object@y
-            #y <- as.vector(y)
-            #fit <- optim(par=c(exp(object@parameters$alpha),exp(object@parameters$gamma),exp(object@parameters$theta)),fn=obj.seq,w=w, y=y)
-            #pars <- c(fit$par[1],fit$par[2],fit$par[3])#,fit$nu.coefficients)
-            fit <- gamlss(y~1,weights=w,family=Swald(),
-                                 control=gamlss.control(c.crit=1e-5,n.cyc=100,trace=FALSE),
-                                 mu.start=object@parameters$mu,
-                                 sigma.start=exp(object@parameters$sigma),
-                                 nu.start=exp(object@parameters$nu))
+            fit <- gamlssML(y~1,weights=w,family=exGAUS(),
+                          control=gamlss.control(n.cyc=100,trace=FALSE),
+                          mu.start=object@parameters$mu,
+                          sigma.start=exp(object@parameters$sigma),
+                          nu.start=exp(object@parameters$nu))
             pars <- c(fit$mu.coefficients,fit$sigma.coefficients,fit$nu.coefficients)
             object <- setpars(object,pars)
             object
           }
 )
 
-setMethod("predict","Swald", 
+setMethod("predict","exgaus", 
           function(object) {
             ret <- object@parameters$mu
             return(ret)
           }
 )
+
+rModels <- list(
+  list(
+    exgaus(rt,pstart=c(5,.1,.1))
+  ),
+  list(
+    exgaus(rt,pstart=c(6,.1,.1))
+  )
+)
+
+trstart=c(0.9,0.1,0.1,0.9)
+transition <- list()
+transition[[1]] <- transInit(~1,nstates=2,data=speed,pstart=trstart[1:2])
+transition[[2]] <- transInit(~1,nstates=2,data=speed,pstart=trstart[3:4])
+
+instart=c(0.5,0.5)
+inMod <- transInit(~1,ns=2,ps=instart,family=multinomial("identity"), data=data.frame(rep(1,3)))
+
+mod <- makeDepmix(response=rModels,transition=transition,prior=inMod,ntimes=c(168,134,137), 
+                  homogeneous=FALSE)
+
+fm3 <- fit(mod,emc=em.control(rand=FALSE))
+summary(fm3)
